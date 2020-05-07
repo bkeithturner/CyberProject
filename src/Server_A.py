@@ -54,10 +54,57 @@ print(type(private_pem), type(public_pem))
 print(private_pem)
 print(public_pem)
 '''
-
+import os
 import socket
+import pickle as p
+import enum
 from _thread import *
 
+reply = ""
+
+# Data is a class that contains the user command, name of the file, and the contents of that file
+class Data:
+    def __init__(self, command, fileName, fileData):
+        self.command = command
+        self.fileName = fileName
+        self.fileData = fileData
+
+# Command is an enum which represents user commands as an int
+class Command(enum.Enum):
+    HELP = 0
+    UPLOAD = 1
+    DELETE = 2
+    SHARE = 3
+
+#TODO: Upload file to database
+def upload(data):
+    global reply
+    p.dump(data.fileData, open('Storage/' + data.fileName, 'wb'))
+    with open('Storage/' + data.fileName, 'wb') as f:
+        f.write(data.fileData)
+    reply = "Uploading " + data.fileName
+
+#TODO: Delete file from database
+def delete(data):
+    global reply
+    try:
+        os.remove('Storage/' + data.fileName)
+        reply = "Deleting " + data.fileName
+    except:
+        reply = data.fileName + " doesn't exist"
+
+#TODO: sync files
+def sync(data):
+    global reply
+    data.fileData = p.load(open('Storage/' + data.fileName, 'rb'))
+    reply = "Syncing " + data.fileName
+
+#TODO: Share database file with another user
+def share(data):
+    global reply
+    reply = "Syncing " + data.fileName
+
+# Set up socket
 ServerSocket = socket.socket()
 host = '127.0.0.1'
 port = 1233
@@ -70,17 +117,27 @@ except socket.error as e:
 print('Waiting for a Connection..')
 ServerSocket.listen(5)
 
-
 def threaded_client(connection):
+    global reply
+
     connection.send(str.encode('Welcome to the Server\n'))
     while True:
-        data = connection.recv(2048)
-        reply = 'Server Says: ' + data.decode('utf-8')
-        if not data:
+        data = p.loads(connection.recv(2048))
+        cmd = Command(data.command).name
+        fname = data.fileName
+
+        if cmd == "UPLOAD":
+            upload(data)
+        elif cmd == "DELETE":
+            delete(data)
+        elif cmd == "HELP":
+            reply = "Figure it out yourself!"
+        else:
+            reply = 'Server Says: ' + fname
+        if not cmd:
             break
         connection.sendall(str.encode(reply))
     connection.close()
-
 
 while True:
     Client, address = ServerSocket.accept()
@@ -89,3 +146,4 @@ while True:
     ThreadCount += 1
     print('Thread Number: ' + str(ThreadCount))
 ServerSocket.close()
+

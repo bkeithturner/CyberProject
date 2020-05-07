@@ -1,0 +1,5 @@
+G1000 control interface:
+Clicking to turn the dials would skip multiple numbers at time or would get stuck continuously changing the values.
+For example, it was impossible to set the COM transceiver frequency to 128.52 because it would only increment to either 128.50 or 128.53. 
+
+Taken from a Cessna 172 with a G1000 at KAFF (Air Force Academy)
